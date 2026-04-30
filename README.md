@@ -1,104 +1,176 @@
 # Signal Separation and Classification in Noisy Environments with Machine Learning
 
-## Abstract
+> A convolutional neural network pipeline that detects and counts Capuchinbird calls in continuous forest audio recordings by classifying mel spectrogram segments.
 
-This project investigates machine learning techniques for signal separation and classification within noisy environments, inspired by traditional matched filtering methods used in radar signal processing. The goal is to train a machine learning model to identify, separate, and classify specific signals within noisy, continuous data. This work has potential applications in fields requiring robust signal processing, such as radar systems, radio frequency (RF) communication, and general digital signal processing.
+![Status](https://img.shields.io/badge/status-complete-brightgreen)
+![Language](https://img.shields.io/badge/language-Python-blue)
+![Semester](https://img.shields.io/badge/semester-Fall%202024-orange)
 
-## Project Structure
+---
 
-The project is organized as follows:
+## Course Information
 
-```mermaid
-graph TD
-    A[main.py]
+| Field                  | Details                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Course Title           | Machine Learning Pattern Recognition                                                                                                                                                                                                                                                                                                                      |
+| Course Number          | EEL 5825                                                                                                                                                                                                                                                                                                                                                  |
+| Semester               | Fall 2024                                                                                                                                                                                                                                                                                                                                                 |
+| Assignment Title       | Final Course Project                                                                                                                                                                                                                                                                                                                                      |
+| Assignment Description | Design and implement a complete machine learning system that demonstrates mastery of core ML principles, including model architecture, training methodology, generalization, and evaluation. The project should reflect the theoretical foundations of why machine learning works, applying learned concepts to a real-world pattern recognition problem. |
 
-    A --> B[Data/]
-    A --> C[Figures/]
-    A --> D[Results/]
-    A --> E[src/]
+---
 
-    subgraph src Folder
-        direction TB
-        E --> F[analysis.py]
-        E --> G[data_processing.py]
-        E --> H[model.py]
-        E --> I[logging_module.py]
-        E --> J[training.py]
-        E --> K[utils.py]
-    end
+## Project Description
+
+This project applies convolutional neural network-based binary classification to the problem of detecting Capuchinbird vocalizations within continuous, noisy rainforest recordings. A CNN is trained on mel spectrogram representations of labeled audio clips and then deployed in a sliding-window inference loop to count bird calls across full-length recordings. The system includes data augmentation (pitch shift, time stretch, noise injection), a three-way train/validation/test split, adaptive learning rate scheduling, and automated comparison of predictions against ground-truth call counts.
+
+---
+
+## Screenshots / Demo
+
+> _No screenshot available. Add one with: `![Demo](docs/your-image.png)`_
+
+---
+
+## Results
+
+When run correctly, the pipeline produces the following outputs in the `Results/` directory:
+
+```
+Results/
+├── best_model.pth              # Model weights from the epoch with lowest validation loss
+├── log.txt                     # Full console output mirrored to disk
+├── Results.csv                 # Per-call detail: filename, call number, start/end time, duration, confidence
+├── ResultsSummary.csv          # Per-file total call counts (predicted)
+├── 1.TrainingHistory.png       # Loss and accuracy curves across all epochs
+├── 2.FinalMetrics.png          # Bar chart of final loss, accuracy, precision, recall, F1
+└── 3.ModelResultsAccuracy.png  # Scatter plot of predicted vs. ground-truth call counts
 ```
 
-```mermaid
-graph TD
-    F[analysis.py]
-    G[data_processing.py]
-    H[model.py]
+**Sample terminal output (training phase):**
 
-    F --> |Contains| FA[AudioTarget]
-    F --> |Contains| FB[ContinuousAudioAnalyzer]
-    F --> |Contains| FC[compare_results]
-    F --> |Contains| FD[check_and_compare_results]
+```
+Using device: cuda
 
-    G --> |Contains| GA[AudioDataset]
-    G --> |Contains| GB[augment_dataset]
-    G --> |Contains| GC[process_directory]
+Using Augmented Dataset
+        Training set size: 1204
+        Validation set size: 213
+        Test set size: 213
 
-    H --> |Contains| HA[AudioCNN]
+Epoch 1/50 ----------------------------------------------------------------------------------------------------
+Current Learning Rate:  0.001000
+Ein (Training Error):   0.312451
+Eval (Validation Error):0.289034
+Eout (Test Error):      0.301122
+Training Accuracy:      0.873456
+Validation Accuracy:    0.882160
+Test Accuracy:          0.877340
 ```
 
-```mermaid
-graph TD
-    I[logging_module.py]
-    J[training.py]
-    K[utils.py]
+**Sample terminal output (analysis phase):**
 
-    I --> |Contains| IA[Logger Writer]
-
-    J --> |Contains| JA[ErrorMetrics]
-    J --> |Contains| JB[load_dataset]
-    J --> |Contains| JC[evaluate_model]
-    J --> |Contains| JD[train_model]
-    J --> |Contains| JE[plot_training_history]
-    J --> |Contains| JF[print_final_metrics]
-
-    K --> |Contains| KA[generate_demo]
+```
+Found 24 audio files to analyze
+Analyzing recordings: 100%|████████████| 24/24
+Results:
+MAE:  2.14
+RMSE: 3.07
+R²:   0.871
 ```
 
-## How to Run the Project
+**Interpreting the outputs:**
 
-The project is executed through the `main.py` file, which provides a command-line interface for various functionalities. It uses `argparse` to accept arguments for different modes and parameters.
+- **Ein / Eval / Eout** correspond to training, validation, and test error respectively. Healthy runs show all three converging; a large gap between Ein and Eout indicates overfitting.
+- **R² (coefficient of determination)** in the analysis phase measures how well predicted call counts track ground truth across files. Values above 0.85 indicate strong agreement.
+- **`3.ModelResultsAccuracy.png`** plots each recording as a point: points near the red dashed line are accurate predictions. Systematic bias (all points above or below the line) suggests the confidence threshold in `analysis.py` (`confidence_threshold = 0.8`) may need adjustment.
+- If analysis fails to find `Results/best_model.pth`, run training first (mode 2) before running analysis (mode 3).
 
-### Command-Line Arguments
+---
 
-| Argument          | Description                                                        |
-| ----------------- | ------------------------------------------------------------------ |
-| `--mode`          | Specifies the mode of operation. Choices are:                      |
-|                   | - `1`: Full Pipeline (train and analyze)                           |
-|                   | - `2`: Training Only                                               |
-|                   | - `3`: Analysis Only                                               |
-|                   | - `4`: Generate Demo Figures                                       |
-|                   |                                                                    |
-| `--epochs`        | Number of training epochs (default: 50).                           |
-|                   |                                                                    |
-| `--learning_rate` | Learning rate for training (default: 0.001).                       |
-|                   |                                                                    |
-| `--augment`       | Use augmented dataset (`T` for True, `F` for False; default: `T`). |
+## Key Concepts
 
-### Example Commands
+`Convolutional Neural Network` `Mel Spectrogram` `Binary Classification` `Data Augmentation` `Sliding Window Inference` `Transfer Learning` `Batch Normalization` `Dropout Regularization` `Learning Rate Scheduling` `Signal Processing`
 
-1. **Run the Full Pipeline with Default Values**:
+---
 
-   ```bash
-   python main.py
-   ```
+## Languages & Tools
 
-2. **Run Training Only with 100 Epochs and 0.005 Learning Rate**:
+- **Language:** Python 3.x
+- **Framework:** PyTorch, librosa
+- **Build System:** pip / requirements.txt
 
-   ```bash
-   python main.py --mode 2 --epochs 100 --learning_rate 0.005
-   ```
+---
 
-3. **Run Analysis Only**:
-   ```bash
-   python main.py --mode 3
-   ```
+## File Structure
+
+```
+project-root/
+├── main.py                          # Entry point; CLI interface for all pipeline modes
+├── requirements.txt                 # Third-party dependencies
+├── Data/                            # Raw audio dataset
+│   ├── Parsed_Capuchinbird_Clips/   # Labeled positive samples (.wav)
+│   ├── Parsed_Not_Capuchinbird_Clips/ # Labeled negative samples (.wav)
+│   └── Augmented/                   # Auto-generated augmented dataset (created at runtime)
+├── Figures/                         # Waveform and spectrogram demo figures (mode 4)
+├── Results/                         # All training outputs, logs, and analysis CSVs
+│   └── GroundTruth.csv              # Ground-truth call counts for analysis evaluation
+└── src/
+    ├── model.py                     # AudioCNN architecture definition
+    ├── data_processing.py           # AudioDataset (PyTorch Dataset) and augmentation logic
+    ├── training.py                  # Training loop, evaluation, metric tracking, plot generation
+    ├── analysis.py                  # Sliding-window inference and call grouping on full recordings
+    ├── utils.py                     # Demo figure generation (waveforms and spectrograms)
+    └── logging_module.py            # Dual-output logger (console + Results/log.txt)
+```
+
+---
+
+## Installation & Usage
+
+### Prerequisites
+
+- Python 3.8 or higher
+- CUDA-capable GPU recommended (CPU fallback supported)
+
+### Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/alexneilgreen/UCF-EEL5825-SignalClassification.git
+cd UCF-EEL5825-SignalClassification
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run the full pipeline (train + analyze)
+python main.py
+```
+
+### Controls
+
+| Argument          | Values                       | Description                                                                |
+| ----------------- | ---------------------------- | -------------------------------------------------------------------------- |
+| `--mode`          | `1` (default), `2`, `3`, `4` | 1: full pipeline, 2: train only, 3: analyze only, 4: generate demo figures |
+| `--epochs`        | integer (default: `50`)      | Number of training epochs                                                  |
+| `--learning_rate` | float (default: `0.001`)     | Adam optimizer learning rate                                               |
+| `--augment`       | `T` (default), `F`           | Whether to use the augmented dataset                                       |
+
+**Example commands:**
+
+```bash
+# Training only, 100 epochs, custom learning rate
+python main.py --mode 2 --epochs 100 --learning_rate 0.005
+
+# Analysis only (requires a trained model in Results/)
+python main.py --mode 3
+
+# Generate demo figures
+python main.py --mode 4
+```
+
+---
+
+## Academic Integrity
+
+This repository is publicly available for **portfolio and reference purposes only**.
+Please do not submit any part of this work as your own for academic coursework.
