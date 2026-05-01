@@ -137,7 +137,7 @@ project-root/
 ```bash
 # 1. Clone the repository
 git clone https://github.com/alexneilgreen/UCF-MLPatternRecognition-SignalClassification.git
-cd UCF-EEL5825-SignalClassification
+cd UCF-MLPatternRecognition-SignalClassification
 
 # 2. Install dependencies
 pip install -r requirements.txt
